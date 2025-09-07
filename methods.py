@@ -1,41 +1,66 @@
 import math
-from config import LETTERS_EXT, KAMEA_SQUARES, alpha_index, PLANETARY_MAP, ROSE_CROSS_MAP
-from core import get_letter_position
-
+from config import LETTERS_EXT, LETTERS_LATIN, LETTERS_HEBREW, KAMEA_SQUARES, PLANETARY_MAP, ROSE_CROSS_MAP
+from core import get_letter_position, clean_spare_text, normalize_text
 
 # ---------------------------
 # 1. Classic (Austin Osman Spare)
 # ---------------------------
 def classical(text, cx, cy, radius, rotation_deg=0):
     """
-    Classic method:
-    - Places each LETTER of the phrase around a circle.
-    - Works ONLY with letters (A–Z, Ñ, etc.).
-    - Digits are ignored.
-    """
-    points = [get_letter_position(ch, cx, cy, radius, rotation_deg) for ch in text if ch.isalpha()]
-    if not points:
-        raise ValueError("Classic method requires at least one valid letter (A–Z).")
-    return points
+    Classic sigil method (Austin Osman Spare inspired).
+    
+    Process:
+    - Removes vowels and duplicate letters from the input phrase.
+    - Keeps only unique consonants (first occurrence).
+    - Places each consonant evenly spaced around a circle.
+    
+    Parameters:
+        text (str): Input phrase.
+        cx, cy (float): Circle center coordinates.
+        radius (float): Circle radius.
+        rotation_deg (float): Optional rotation in degrees.
 
+    Returns:
+        list[tuple]: List of (x, y) coordinates for the sigil path.
+    """
+    cleaned = clean_spare_text(text)
+    points = [get_letter_position(ch, cx, cy, radius, rotation_deg) for ch in cleaned]
+    if not points:
+        raise ValueError("Classic method requires at least one valid consonant after cleaning.")
+    return points
 
 # ---------------------------
 # 2. Numeric (Pythagorean numerology)
 # ---------------------------
 def reduce_number(n: int) -> int:
-    """Reduce a number to a single digit (1–9)."""
+    """
+    Reduce a number to a single digit (1–9).
+    Example: 14 → 1 + 4 = 5
+    """
     while n > 9:
         n = sum(int(d) for d in str(n))
     return n
 
 def numeric(text, cx, cy, radius, rotation_deg=0):
     """
-    Numeric method:
-    - Converts each letter to a number (A=1 ... I=9, J=1 ... R=9, S=1 ... Z=8).
-    - Digits in the text are reduced directly to 1–9.
-    - If input is empty or has no valid characters → raises ValueError.
+    Numeric sigil method (Pythagorean numerology).
+
+    Process:
+    - Each letter A–Z is mapped cyclically to 1–9.
+    - Digits are reduced recursively to a single digit (1–9).
+    - Each value corresponds to a radial division of a circle.
+
+    Parameters:
+        text (str): Input phrase.
+        cx, cy (float): Circle center coordinates.
+        radius (float): Circle radius.
+        rotation_deg (float): Optional rotation in degrees.
+
+    Returns:
+        list[tuple]: List of (x, y) coordinates for the sigil path.
     """
-    mapping = {ch: (i % 9) + 1 for i, ch in enumerate("ABCDEFGHIJKLMNOPQRSTUVWXYZ")}
+    text = normalize_text(text)
+    mapping = {ch: (i % 9) + 1 for i, ch in enumerate(LETTERS_LATIN)}
     points = []
 
     for ch in text:
@@ -51,21 +76,32 @@ def numeric(text, cx, cy, radius, rotation_deg=0):
         points.append((x, y))
 
     if not points:
-        raise ValueError("Numeric method requires at least one digit (0–9) or valid letter (A–Z).")
-
+        raise ValueError("Numeric method requires at least one digit or valid A–Z letter.")
     return points
-
 
 # ---------------------------
 # 3. Planetary (Golden Dawn correspondences)
 # ---------------------------
 def planetary(text, cx, cy, radius, rotation_deg=0):
     """
-    Planetary method:
-    - Each letter is assigned to a planet based on Golden Dawn correspondences.
-    - Works ONLY with letters (A–Z). Digits are ignored.
-    - If input has only digits → raises ValueError.
+    Planetary sigil method (Golden Dawn correspondences).
+
+    Process:
+    - Each letter A–Z is mapped to one of the 7 classical planets,
+      according to the Golden Dawn alphabetic planetary scheme.
+    - The circle is divided into 7 equal planetary sectors.
+    - Each letter determines a point in the sector of its planet.
+
+    Parameters:
+        text (str): Input phrase.
+        cx, cy (float): Circle center coordinates.
+        radius (float): Circle radius.
+        rotation_deg (float): Optional rotation in degrees.
+
+    Returns:
+        list[tuple]: List of (x, y) coordinates for the sigil path.
     """
+    text = normalize_text(text)
     planets = list(PLANETARY_MAP.keys())
     points = []
 
@@ -78,19 +114,18 @@ def planetary(text, cx, cy, radius, rotation_deg=0):
                 points.append((x, y))
 
     if not points:
-        raise ValueError("Planetary method requires at least one valid letter mapped to a planet (A–Z).")
-
+        raise ValueError("Planetary method requires valid A–Z letters mapped to a planet.")
     return points
-
 
 # ---------------------------
 # 4. Kamea (planetary magic squares)
 # ---------------------------
-def kamea(text, cx, cy, radius, rotation_deg=0, planet="jupiter"):
+def kamea(text, cx, cy, radius, rotation_deg=0, planet="jupiter", alphabet="latin"):
     """
     Kamea method:
     - Uses the chosen planet's magic square (e.g. Jupiter 4x4, Saturn 3x3).
-    - Works with both letters and digits.
+    - Supports both Latin and Hebrew alphabets.
+    - Each character is mapped to a number, which corresponds to a cell in the square.
     - If no valid characters are found → raises ValueError.
     """
     if planet not in KAMEA_SQUARES:
@@ -98,11 +133,23 @@ def kamea(text, cx, cy, radius, rotation_deg=0, planet="jupiter"):
 
     square = KAMEA_SQUARES[planet]
     size = len(square)
-    mapping = {LETTERS_EXT[i]: (i % (size*size)) + 1 for i in range(len(LETTERS_EXT))}
+
+    # Select alphabet string based on user choice
+    if alphabet == "latin":
+        letters = LETTERS_EXT
+    elif alphabet == "hebrew":
+        letters = LETTERS_HEBREW
+    else:
+        raise ValueError(f"Unsupported alphabet: {alphabet}")
+
+    # Map letters to numbers (cycled over square size²)
+    mapping = {letters[i]: (i % (size * size)) + 1 for i in range(len(letters))}
+
     cell_size = (radius * 2) / size
     top_left_x, top_left_y = cx - radius, cy - radius
     points = []
 
+    # Map input text into Kamea coordinates
     for ch in text:
         if ch in mapping:
             target = mapping[ch]
@@ -119,20 +166,32 @@ def kamea(text, cx, cy, radius, rotation_deg=0, planet="jupiter"):
                     points.append((x, y))
 
     if not points:
-        raise ValueError(f"Kamea method requires valid letters or digits that fit in the {planet.title()} Kamea.")
+        raise ValueError(
+            f"Kamea method requires valid characters in {planet.title()} Kamea with {alphabet} alphabet."
+        )
 
     return points
-
 
 # ---------------------------
 # 5. Rosicrucian (Rose Cross Alphabet inspired)
 # ---------------------------
 def rosicrucian(text, cx, cy, radius, rotation_deg=0):
     """
-    Rosicrucian method:
-    - Inspired by the Rose Cross Lamen.
-    - Works ONLY with letters A–Z.
-    - If input has only digits → raises ValueError.
+    Rosicrucian sigil method (Rose Cross alphabet).
+
+    Process:
+    - Letters are grouped into "arms" of a cross (up, down, left, right) and center.
+    - Each group of letters corresponds to a linear offset or angular placement.
+    - The cross arms radiate outward from the center of the circle.
+
+    Parameters:
+        text (str): Input phrase.
+        cx, cy (float): Center coordinates.
+        radius (float): Circle radius (used to calculate step size).
+        rotation_deg (float): Reserved for compatibility.
+
+    Returns:
+        list[tuple]: List of (x, y) coordinates for the sigil path.
     """
     points = []
     step = radius / 6
@@ -156,6 +215,5 @@ def rosicrucian(text, cx, cy, radius, rotation_deg=0):
             points.append((cx + (step * math.cos(angle)), cy + (step * math.sin(angle))))
 
     if not points:
-        raise ValueError("Rosicrucian method requires at least one valid letter (A–Z). Digits are not supported.")
-
+        raise ValueError("Rosicrucian requires valid A–Z letters.")
     return points

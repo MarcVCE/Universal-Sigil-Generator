@@ -1,13 +1,34 @@
-# config.py
+# ---------------------------
 # Configuration and constants for the Sigil Generator
+# ---------------------------
 
-# Extended alphabet including Spanish special characters
+# ---------------------------
+# Alphabets
+# ---------------------------
+
+# Basic Latin alphabet
+LETTERS_LATIN = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+# Extended Latin (includes Ñ, Ç, accented vowels, Ü)
+# → Default for most use cases with Latin-derived languages
 LETTERS_EXT = "ABCDEFGHIJKLMNOPQRSTUVWXYZÑÇÁÉÍÓÚÜ"
+
+# Hebrew alphabet (22 letters, no final forms here)
+# → Used if user selects "hebrew" in Kamea method
+LETTERS_HEBREW = "אבגדהוזחטיכלמנסעפצקרשת"
+
+# Numbers (used in numeric and Kamea methods)
 NUMBERS = "0123456789"
+
+# Default alphabet for normalization = Extended Latin + Numbers
 ALPHABET = LETTERS_EXT + NUMBERS
+
+# Index mapping (used in classical circle positioning)
 alpha_index = {ch: i for i, ch in enumerate(ALPHABET)}
 
+# ---------------------------
 # Intention colors (used in modern mode)
+# ---------------------------
 INTENTION_COLORS = {
     "prosperity": ("#1fa34a", "#0e5929"),
     "passion": ("#d62828", "#7a1b1b"),
@@ -16,7 +37,9 @@ INTENTION_COLORS = {
     "healing": ("#6a4c93", "#3a275d"),
 }
 
+# ---------------------------
 # Output versions
+# ---------------------------
 VERSION_DESCRIPTIONS = {
     "normal": "Default sigil for display, charging, or decorative use.",
     "inverted": "Color-inverted sigil for release or destruction rituals.",
@@ -37,8 +60,9 @@ PLANETARY_MAP = {
     "♄": "GNU"       # Saturn
 }
 
-
+# ---------------------------
 # Planetary Kameas (Magic Squares)
+# ---------------------------
 KAMEA_SQUARES = {
     "saturn": [  # 3x3
         [2, 9, 4],
@@ -99,13 +123,46 @@ KAMEA_SQUARES = {
 }
 
 # ---------------------------
-# Rosicrucian (Rose Cross inspired)
+# Rosicrucian (Rose Cross inspired, Golden Dawn mapping)
 # ---------------------------
 ROSE_CROSS_MAP = {
     "up": "ABCDE",
-    "right": "FGHIJ",
-    "down": "KLMNO",
-    "left": "PQRST",
-    "center": "UVWXYZ"
+    "right": "FGHIJKL",
+    "down": "MNOPQR",
+    "left": "STUVWX",
+    "center": "YZ"
+}
+
+# ---------------------------
+# Planetary Hours + Decanates
+# ---------------------------
+PLANETARY_ORDER = ["♄","♃","♂","☉","♀","☿","☽"]
+
+DECANATES = {
+    "aries":        ["Mars","Sun","Venus"],
+    "taurus":       ["Mercury","Moon","Saturn"],
+    "gemini":       ["Jupiter","Mars","Sun"],
+    "cancer":       ["Venus","Mercury","Moon"],
+    "leo":          ["Saturn","Jupiter","Mars"],
+    "virgo":        ["Sun","Venus","Mercury"],
+    "libra":        ["Moon","Saturn","Jupiter"],
+    "scorpio":      ["Mars","Sun","Venus"],
+    "sagittarius":  ["Mercury","Moon","Saturn"],
+    "capricorn":    ["Jupiter","Mars","Sun"],
+    "aquarius":     ["Venus","Mercury","Moon"],
+    "pisces":       ["Saturn","Jupiter","Mars"]
+}
+
+# ---------------------------
+# Planet Names (symbols → Latin names)
+# ---------------------------
+PLANET_NAMES = {
+    "☉": "Sun",
+    "☽": "Moon",
+    "☿": "Mercury",
+    "♀": "Venus",
+    "♂": "Mars",
+    "♃": "Jupiter",
+    "♄": "Saturn"
 }
 
